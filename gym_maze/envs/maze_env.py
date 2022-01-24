@@ -71,7 +71,7 @@ class MazeEnv(gym.Env):
         return [seed]
 
     def step(self, action):
-        if action in [0,1,2,3]:
+        if action in [0, 1, 2, 3]:
             self.maze_view.move_robot(self.ACTION[action])
         else:
             self.maze_view.move_robot(action)

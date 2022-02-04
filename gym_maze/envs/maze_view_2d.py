@@ -486,10 +486,10 @@ class Maze:
     @classmethod
     def get_walls_status(cls, cell):
         walls = {
-            "N" : (cell & 0x1) >> 0,
-            "E" : (cell & 0x2) >> 1,
-            "S" : (cell & 0x4) >> 2,
-            "W" : (cell & 0x8) >> 3,
+            "N": (cell & 0x1) >> 0,
+            "E": (cell & 0x2) >> 1,
+            "S": (cell & 0x4) >> 2,
+            "W": (cell & 0x8) >> 3,
         }
         return walls
 

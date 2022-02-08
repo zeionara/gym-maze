@@ -2,6 +2,7 @@ import pygame
 import random
 import numpy as np
 import os
+from typing import Dict, Tuple
 
 OPPOSITE_DIRECTION = {
     "N": "S",
@@ -143,10 +144,10 @@ class MazeView2D:
             return np.flipud(np.rot90(pygame.surfarray.array3d(pygame.display.get_surface())))
 
     def __draw_maze(self):
-        
+
         if self.__enable_render is False:
             return
-        
+
         line_colour = (0, 0, 0, 255)
 
         # drawing the horizontal lines
@@ -173,7 +174,7 @@ class MazeView2D:
     def __cover_walls(self, x, y, dirs, colour=(0, 0, 255, 15)):
         if self.__enable_render is False:
             return
-        
+
         dx = x * self.CELL_W
         dy = y * self.CELL_H
 
@@ -202,7 +203,7 @@ class MazeView2D:
 
         if self.__enable_render is False:
             return
-        
+
         x = int(self.__robot[0] * self.CELL_W + self.CELL_W * 0.5 + 0.5)
         y = int(self.__robot[1] * self.CELL_H + self.CELL_H * 0.5 + 0.5)
         r = int(min(self.CELL_W, self.CELL_H)/5 + 0.5)
@@ -221,7 +222,7 @@ class MazeView2D:
 
         if self.__enable_render is False:
             return
-        
+
         colour_range = np.linspace(0, 255, len(self.maze.portals), dtype=int)
         colour_i = 0
         for portal in self.maze.portals:
@@ -297,7 +298,7 @@ class Maze:
     def __init__(self, maze_cells=None, maze_size=(10, 10), has_loops=True, num_portals=0):
 
         # maze member variables
-        self.maze_cells = maze_cells
+        self.maze_cells = self._consolidate_maze(maze_cells)
         self.has_loops = has_loops
         self.__portals_dict = dict()
         self.__portals = []
@@ -341,6 +342,37 @@ class Maze:
         else:
             return np.load(file_path, allow_pickle=False, fix_imports=True)
 
+    def _is_valid_cell(self, cell: Tuple[int, int]) -> bool:
+        return 0 <= cell[0] < self.MAZE_W and 0 <= cell[1] < self.MAZE_H
+
+    def _get_neighbours(self, cell: Tuple[int, int]) -> Dict[str, Tuple[int,int]]:
+        neighbours = dict()
+        for dir_key, dir_val in self.COMPASS.items():
+            x1 = cell[0] + dir_val[0]
+            y1 = cell[1] + dir_val[1]
+            # if cell is within bounds
+            if self._is_valid_cell((x1, y1)):
+                # if self.num_walls_broken(self.maze_cells[x1, y1]) <= 1
+                neighbours[dir_key] = (x1, y1)
+        return neighbours
+
+    def _consolidate_maze(self, maze_cells: np.ndarray):
+        """
+        Generated mazes only reflect broken walls in one direction. Returns a
+        numpy array where the entires indicate existence of pathsways.
+        """
+        walls_dict = {"N": 0x1, "E": 0x2, "S": 0x4, "W": 0x8}
+        for i in range(maze_cells.shape[1]):  # height
+            for j in range(maze_cells.shape[0]):  # width
+                paths_dict = dict()
+                for direction, neighbour in self._get_neighbours((j, i)).items():
+                    paths_dict[direction] = 1 \
+                        if (self.get_walls_status(maze_cells[neighbour])[OPPOSITE_DIRECTION[direction]]
+                            or self.get_walls_status(maze_cells[(j, i)])[direction])\
+                        else 0
+                maze_cells[(j, i)] = sum([walls_dict[k] for k, v in paths_dict.items() if v == 1])
+        return maze_cells
+
     def _generate_maze(self):
 
         # list of all cell locations
@@ -359,16 +391,9 @@ class Maze:
             x0, y0 = current_cell
 
             # find neighbours of the current cells that actually exist
-            neighbours = dict()
-            for dir_key, dir_val in self.COMPASS.items():
-                x1 = x0 + dir_val[0]
-                y1 = y0 + dir_val[1]
-                # if cell is within bounds
-                if 0 <= x1 < self.MAZE_W and 0 <= y1 < self.MAZE_H:
-                    # if all four walls still exist
-                    if self.all_walls_intact(self.maze_cells[x1, y1]):
-                        # if self.num_walls_broken(self.maze_cells[x1, y1]) <= 1
-                        neighbours[dir_key] = (x1, y1)
+            neighbours = {direction: cell
+                          for direction, cell in self._get_neighbours((x0, y0)).items()
+                          if self.all_walls_intact(self.maze_cells[cell])}
 
             # if there is a neighbour
             if neighbours:
@@ -393,6 +418,8 @@ class Maze:
 
         if self.num_portals > 0:
             self.__set_random_portals(num_portal_sets=self.num_portals, set_size=2)
+
+        self.maze_cells = self._consolidate_maze(self.maze_cells)
 
     def __break_random_walls(self, percent):
         # find some random cells to break
@@ -528,13 +555,6 @@ class Maze:
 
         return "".join([OPPOSITE_DIRECTION[direction] for direction in directions])
 
-    @classmethod
-    def _consolidate_maze(cls, maze_cells:np.ndarray):
-        """
-        Generated mazes only reflect broken walls in one direction. Returns a
-        numpy array where the entires indicate existence of pathsways.
-        """
-        pass
 
 class Portal:
 

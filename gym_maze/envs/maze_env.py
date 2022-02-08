@@ -11,7 +11,7 @@ class MazeEnv(gym.Env):
         "render.modes": ["human", "rgb_array"],
     }
 
-    ACTION = ["N", "S", "E", "W"]
+    ACTION = ["N", "E", "S", "W"]
 
     def __init__(self, maze_file=None, maze_size=None, mode=None, enable_render=True):
 

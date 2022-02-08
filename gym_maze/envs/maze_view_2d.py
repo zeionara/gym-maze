@@ -3,6 +3,12 @@ import random
 import numpy as np
 import os
 
+OPPOSITE_DIRECTION = {
+    "N": "S",
+    "E": "W",
+    "S": "N",
+    "W": "E",
+}
 
 class MazeView2D:
 
@@ -86,28 +92,28 @@ class MazeView2D:
             if self.__enable_render is True:
                 pygame.display.quit()
             pygame.quit()
-        except Exception:
+        except ex:
+            print(ex)
             pass
 
-    def move_robot(self, dir):
-        if dir not in self.__maze.COMPASS.keys():
+    def move_robot(self, direction):
+        if direction not in self.__maze.COMPASS.keys():
             raise ValueError("dir cannot be %s. The only valid dirs are %s."
-                             % (str(dir), str(self.__maze.COMPASS.keys())))
+                             % (str(direction), str(self.__maze.COMPASS.keys())))
 
-        if self.__maze.is_open(self.__robot, dir):
+        if self.__maze.is_open(self.__robot, direction):
 
             # update the drawing
             self.__draw_robot(transparency=0)
 
             # move the robot
-            self.__robot += np.array(self.__maze.COMPASS[dir])
+            self.__robot += np.array(self.__maze.COMPASS[direction])
             # if it's in a portal afterward
             if self.maze.is_portal(self.robot):
                 self.__robot = np.array(self.maze.get_portal(tuple(self.robot)).teleport(tuple(self.robot)))
             self.__draw_robot(transparency=255)
 
     def reset_robot(self):
-
         self.__draw_robot(transparency=0)
         self.__robot = np.zeros(2, dtype=int)
         self.__draw_robot(transparency=255)
@@ -127,10 +133,9 @@ class MazeView2D:
             self.__draw_portals()
             self.__draw_robot()
 
-
             # update the screen
             self.screen.blit(self.background, (0, 0))
-            self.screen.blit(self.maze_layer,(0, 0))
+            self.screen.blit(self.maze_layer, (0, 0))
 
             if mode == "human":
                 pygame.display.flip()
@@ -156,17 +161,16 @@ class MazeView2D:
 
         # breaking the walls
         for x in range(len(self.maze.maze_cells)):
-            for y in range (len(self.maze.maze_cells[x])):
+            for y in range(len(self.maze.maze_cells[x])):
                 # check the which walls are open in each cell
                 walls_status = self.maze.get_walls_status(self.maze.maze_cells[x, y])
                 dirs = ""
-                for dir, open in walls_status.items():
-                    if open:
-                        dirs += dir
+                for direction, is_open in walls_status.items():
+                    if is_open:
+                        dirs += direction
                 self.__cover_walls(x, y, dirs)
 
     def __cover_walls(self, x, y, dirs, colour=(0, 0, 255, 15)):
-
         if self.__enable_render is False:
             return
         
@@ -176,17 +180,17 @@ class MazeView2D:
         if not isinstance(dirs, str):
             raise TypeError("dirs must be a str.")
 
-        for dir in dirs:
-            if dir == "S":
+        for direction in dirs:
+            if direction == "S":
                 line_head = (dx + 1, dy + self.CELL_H)
                 line_tail = (dx + self.CELL_W - 1, dy + self.CELL_H)
-            elif dir == "N":
+            elif direction == "N":
                 line_head = (dx + 1, dy)
                 line_tail = (dx + self.CELL_W - 1, dy)
-            elif dir == "W":
+            elif direction == "W":
                 line_head = (dx, dy + 1)
                 line_tail = (dx, dy + self.CELL_H - 1)
-            elif dir == "E":
+            elif direction == "E":
                 line_head = (dx + self.CELL_W, dy + 1)
                 line_tail = (dx + self.CELL_W, dy + self.CELL_H - 1)
             else:
@@ -221,7 +225,7 @@ class MazeView2D:
         colour_range = np.linspace(0, 255, len(self.maze.portals), dtype=int)
         colour_i = 0
         for portal in self.maze.portals:
-            colour = ((100 - colour_range[colour_i])% 255, colour_range[colour_i], 0)
+            colour = ((100 - colour_range[colour_i]) % 255, colour_range[colour_i], 0)
             colour_i += 1
             for location in portal.locations:
                 self.__colour_cell(location, colour=colour, transparency=transparency)
@@ -290,7 +294,7 @@ class Maze:
         "W": (-1, 0)
     }
 
-    def __init__(self, maze_cells=None, maze_size=(10,10), has_loops=True, num_portals=0):
+    def __init__(self, maze_cells=None, maze_size=(10, 10), has_loops=True, num_portals=0):
 
         # maze member variables
         self.maze_cells = maze_cells
@@ -363,17 +367,17 @@ class Maze:
                 if 0 <= x1 < self.MAZE_W and 0 <= y1 < self.MAZE_H:
                     # if all four walls still exist
                     if self.all_walls_intact(self.maze_cells[x1, y1]):
-                    #if self.num_walls_broken(self.maze_cells[x1, y1]) <= 1:
+                        # if self.num_walls_broken(self.maze_cells[x1, y1]) <= 1
                         neighbours[dir_key] = (x1, y1)
 
             # if there is a neighbour
             if neighbours:
                 # select a random neighbour
-                dir = random.choice(tuple(neighbours.keys()))
-                x1, y1 = neighbours[dir]
+                direction = random.choice(tuple(neighbours.keys()))
+                x1, y1 = neighbours[direction]
 
                 # knock down the wall between the current cell and the selected neighbour
-                self.maze_cells[x1, y1] = self.__break_walls(self.maze_cells[x1, y1], self.__get_opposite_wall(dir))
+                self.maze_cells[x1, y1] = self.__break_walls(self.maze_cells[x1, y1], self.__get_opposite_wall(direction))
 
                 # push the current cell location to the stack
                 cell_stack.append(current_cell)
@@ -402,10 +406,10 @@ class Maze:
 
             # randomize the compass order
             dirs = random.sample(list(self.COMPASS.keys()), len(self.COMPASS))
-            for dir in dirs:
+            for direction in dirs:
                 # break the wall if it's not already open
-                if self.is_breakable((x, y), dir):
-                    self.maze_cells[x, y] = self.__break_walls(self.maze_cells[x, y], dir)
+                if self.is_breakable((x, y), direction):
+                    self.maze_cells[x, y] = self.__break_walls(self.maze_cells[x, y], direction)
                     break
 
     def __set_random_portals(self, num_portal_sets, set_size=2):
@@ -430,7 +434,7 @@ class Maze:
                 # convert portal ids to location
                 x = portal_cell_id % self.MAZE_H
                 y = int(portal_cell_id / self.MAZE_H)
-                portal_locations.append((x,y))
+                portal_locations.append((x, y))
             # append the new portal to the maze
             portal = Portal(*portal_locations)
             self.__portals.append(portal)
@@ -439,25 +443,25 @@ class Maze:
             for portal_location in portal_locations:
                 self.__portals_dict[portal_location] = portal
 
-    def is_open(self, cell_id, dir):
+    def is_open(self, cell_id, direction):
         # check if it would be out-of-bound
-        x1 = cell_id[0] + self.COMPASS[dir][0]
-        y1 = cell_id[1] + self.COMPASS[dir][1]
+        x1 = cell_id[0] + self.COMPASS[direction][0]
+        y1 = cell_id[1] + self.COMPASS[direction][1]
 
         # if cell is still within bounds after the move
         if self.is_within_bound(x1, y1):
             # check if the wall is opened
-            this_wall = bool(self.get_walls_status(self.maze_cells[cell_id[0], cell_id[1]])[dir])
-            other_wall = bool(self.get_walls_status(self.maze_cells[x1, y1])[self.__get_opposite_wall(dir)])
+            this_wall = bool(self.get_walls_status(self.maze_cells[cell_id[0], cell_id[1]])[direction])
+            other_wall = bool(self.get_walls_status(self.maze_cells[x1, y1])[self.__get_opposite_wall(direction)])
             return this_wall or other_wall
         return False
 
-    def is_breakable(self, cell_id, dir):
+    def is_breakable(self, cell_id, direction):
         # check if it would be out-of-bound
-        x1 = cell_id[0] + self.COMPASS[dir][0]
-        y1 = cell_id[1] + self.COMPASS[dir][1]
+        x1 = cell_id[0] + self.COMPASS[direction][0]
+        y1 = cell_id[1] + self.COMPASS[direction][1]
 
-        return not self.is_open(cell_id, dir) and self.is_within_bound(x1, y1)
+        return not self.is_open(cell_id, direction) and self.is_within_bound(x1, y1)
 
     def is_within_bound(self, x, y):
         # true if cell is still within bounds after the move
@@ -485,6 +489,7 @@ class Maze:
 
     @classmethod
     def get_walls_status(cls, cell):
+        """return dict of broken walls around a cell"""
         walls = {
             "N": (cell & 0x1) >> 0,
             "E": (cell & 0x2) >> 1,
@@ -499,11 +504,9 @@ class Maze:
 
     @classmethod
     def num_walls_broken(cls, cell):
+        """Returns the number of broken walls."""
         walls = cls.get_walls_status(cell)
-        num_broken = 0
-        for wall_broken in walls.values():
-            num_broken += wall_broken
-        return num_broken
+        return sum(walls.values())
 
     @classmethod
     def __break_walls(cls, cell, dirs):
@@ -518,28 +521,20 @@ class Maze:
         return cell
 
     @classmethod
-    def __get_opposite_wall(cls, dirs):
-
-        if not isinstance(dirs, str):
+    def __get_opposite_wall(cls, directions):
+        """get opposing walls for a string of directions. Returns string of opposing directions """
+        if not isinstance(directions, str):
             raise TypeError("dirs must be a str.")
 
-        opposite_dirs = ""
+        return "".join([OPPOSITE_DIRECTION[direction] for direction in directions])
 
-        for dir in dirs:
-            if dir == "N":
-                opposite_dir = "S"
-            elif dir == "S":
-                opposite_dir = "N"
-            elif dir == "E":
-                opposite_dir = "W"
-            elif dir == "W":
-                opposite_dir = "E"
-            else:
-                raise ValueError("The only valid directions are (N, S, E, W).")
-
-            opposite_dirs += opposite_dir
-
-        return opposite_dirs
+    @classmethod
+    def _consolidate_maze(cls, maze_cells:np.ndarray):
+        """
+        Generated mazes only reflect broken walls in one direction. Returns a
+        numpy array where the entires indicate existence of pathsways.
+        """
+        for
 
 class Portal:
 
@@ -567,7 +562,7 @@ class Portal:
 
 if __name__ == "__main__":
 
-    maze = MazeView2D(screen_size= (500, 500), maze_size=(10,10))
+    maze = MazeView2D(screen_size=(500, 500), maze_size=(10, 10))
     maze.update()
     input("Enter any key to quit.")
 

@@ -534,7 +534,7 @@ class Maze:
         Generated mazes only reflect broken walls in one direction. Returns a
         numpy array where the entires indicate existence of pathsways.
         """
-        for
+        pass
 
 class Portal:
 

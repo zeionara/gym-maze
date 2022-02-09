@@ -298,16 +298,16 @@ class Maze:
     def __init__(self, maze_cells=None, maze_size=(10, 10), has_loops=True, num_portals=0):
 
         # maze member variables
-        self.maze_cells = self._consolidate_maze(maze_cells)
         self.has_loops = has_loops
         self.__portals_dict = dict()
         self.__portals = []
         self.num_portals = num_portals
 
         # Use existing one if exists
-        if self.maze_cells is not None:
-            if isinstance(self.maze_cells, (np.ndarray, np.generic)) and len(self.maze_cells.shape) == 2:
+        if maze_cells is not None:
+            if isinstance(maze_cells, (np.ndarray, np.generic)) and len(maze_cells.shape) == 2:
                 self.maze_size = tuple(maze_cells.shape)
+                self.maze_cells = self._consolidate_maze(maze_cells)
             else:
                 raise ValueError("maze_cells must be a 2D NumPy array.")
         # Otherwise, generate a random one

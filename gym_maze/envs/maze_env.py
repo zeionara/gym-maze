@@ -18,7 +18,7 @@ class MazeEnv(gym.Env):
             maze_file=None,
             maze_size=None,
             mode=None,
-            enable_render=True):
+            enable_render: bool = True):
 
         self.viewer = None
         self.enable_render = enable_render
@@ -67,7 +67,7 @@ class MazeEnv(gym.Env):
         self.configure()
 
     def __del__(self):
-        if self.enable_render is True:
+        if self.enable_render:
             self.maze_view.quit_game()
 
     def configure(self, display=None):

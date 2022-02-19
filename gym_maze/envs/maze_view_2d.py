@@ -76,9 +76,9 @@ class MazeView2D:
             # show the goal
             self.__draw_goal()
 
-    def update(self, mode="human"):
+    def update(self, mode="human", cells: Optional[np.ndarray, List[np.ndarray]] = None):
         try:
-            img_output = self.__view_update(mode)
+            img_output = self.__view_update(mode, cells)
             self.__controller_update()
         except Exception as e:
             self.__game_over = True
@@ -126,13 +126,14 @@ class MazeView2D:
                     self.__game_over = True
                     self.quit_game()
 
-    def __view_update(self, mode="human"):
+    def __view_update(self, mode="human", cells: Optional[np.ndarray, List[np.ndarray]] = None):
         if not self.__game_over:
             # update the robot's position
             self.__draw_entrance()
             self.__draw_goal()
             self.__draw_portals()
             self.__draw_robot()
+            self.__draw_cells(cells)
 
             # update the screen
             self.screen.blit(self.background, (0, 0))
@@ -171,7 +172,7 @@ class MazeView2D:
                         dirs += direction
                 self.__cover_walls(x, y, dirs)
 
-    def __cover_walls(self, x, y, dirs, colour=(0, 0, 255, 15)):
+    def __cover_walls(self, x, y, dirs, colour=(0, 0, 255, 15), line_width=1.1):
         if self.__enable_render is False:
             return
 
@@ -197,7 +198,7 @@ class MazeView2D:
             else:
                 raise ValueError("The only valid directions are (N, S, E, W).")
 
-            pygame.draw.line(self.maze_layer, colour, line_head, line_tail)
+            pygame.draw.line(self.maze_layer, colour, line_head, line_tail, width=line_width)
 
     def __draw_robot(self, colour=(0, 0, 150), transparency=255):
 
@@ -210,11 +211,11 @@ class MazeView2D:
 
         pygame.draw.circle(self.maze_layer, colour + (transparency,), (x, y), r)
 
-    def __draw_entrance(self, colour=(0, 0, 150), transparency=235):
+    def __draw_entrance(self, colour=(100, 100, 200), transparency=235):
 
         self.__colour_cell(self.entrance, colour=colour, transparency=transparency)
 
-    def __draw_goal(self, colour=(150, 0, 0), transparency=235):
+    def __draw_goal(self, colour=(200, 100, 100), transparency=235):
 
         self.__colour_cell(self.goal, colour=colour, transparency=transparency)
 
@@ -230,6 +231,13 @@ class MazeView2D:
             colour_i += 1
             for location in portal.locations:
                 self.__colour_cell(location, colour=colour, transparency=transparency)
+
+    def __draw_cells(self, cells: Optional[np.ndarray, List[np.ndarray]] = None):
+        if isinstance(cells, list):
+            for cell in cells:
+                self.__colour_cell(cell, colour=(237, 237, 237), transparency=235)
+        else:
+            elf.__colour_cell(cells, colour=(237, 237, 237), transparency=235)
 
     def __colour_cell(self, cell, colour, transparency):
 

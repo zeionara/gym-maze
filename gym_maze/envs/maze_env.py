@@ -106,11 +106,10 @@ class MazeEnv(gym.Env):
     def is_game_over(self):
         return self.maze_view.game_over
 
-    def render(self, mode="human", close=False):
+    def render(self, mode="human", close=False, cells: Optional[np.ndarray, List[np.ndarray]] = None):
         if close:
             self.maze_view.quit_game()
-
-        return self.maze_view.update(mode)
+        return self.maze_view.update(mode, cells)
 
 
 class MazeEnvSample5x5(MazeEnv):

@@ -4,6 +4,7 @@ import gym
 from gym import error, spaces, utils
 from gym.utils import seeding
 from gym_maze.envs.maze_view_2d import MazeView2D
+from typing import Optional, List, Union
 
 
 class MazeEnv(gym.Env):
@@ -106,7 +107,7 @@ class MazeEnv(gym.Env):
     def is_game_over(self):
         return self.maze_view.game_over
 
-    def render(self, mode="human", close=False, cells: Optional[np.ndarray, List[np.ndarray]] = None):
+    def render(self, mode="human", close=False, cells: Optional[Union[np.ndarray, List[np.ndarray]]] = None):
         if close:
             self.maze_view.quit_game()
         return self.maze_view.update(mode, cells)

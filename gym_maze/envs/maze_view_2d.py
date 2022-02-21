@@ -2,7 +2,7 @@ import pygame
 import random
 import numpy as np
 import os
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional, List, Union
 
 OPPOSITE_DIRECTION = {
     "N": "S",
@@ -76,7 +76,7 @@ class MazeView2D:
             # show the goal
             self.__draw_goal()
 
-    def update(self, mode="human", cells: Optional[np.ndarray, List[np.ndarray]] = None):
+    def update(self, mode="human", cells: Optional[Union[np.ndarray, List[np.ndarray]]] = None):
         try:
             img_output = self.__view_update(mode, cells)
             self.__controller_update()
@@ -126,14 +126,15 @@ class MazeView2D:
                     self.__game_over = True
                     self.quit_game()
 
-    def __view_update(self, mode="human", cells: Optional[np.ndarray, List[np.ndarray]] = None):
+    def __view_update(self, mode="human", cells: Optional[Union[np.ndarray, List[np.ndarray]]] = None):
         if not self.__game_over:
             # update the robot's position
+            self.__colour_cells(cells)
             self.__draw_entrance()
             self.__draw_goal()
             self.__draw_portals()
             self.__draw_robot()
-            self.__draw_cells(cells)
+            self.__draw_maze()
 
             # update the screen
             self.screen.blit(self.background, (0, 0))
@@ -172,7 +173,7 @@ class MazeView2D:
                         dirs += direction
                 self.__cover_walls(x, y, dirs)
 
-    def __cover_walls(self, x, y, dirs, colour=(0, 0, 255, 15), line_width=1.1):
+    def __cover_walls(self, x, y, dirs, colour=(0, 0, 255, 15), line_width=1):
         if self.__enable_render is False:
             return
 
@@ -232,12 +233,12 @@ class MazeView2D:
             for location in portal.locations:
                 self.__colour_cell(location, colour=colour, transparency=transparency)
 
-    def __draw_cells(self, cells: Optional[np.ndarray, List[np.ndarray]] = None):
+    def __colour_cells(self, cells: Optional[Union[np.ndarray, List[np.ndarray]]] = None):
         if isinstance(cells, list):
             for cell in cells:
                 self.__colour_cell(cell, colour=(237, 237, 237), transparency=235)
         else:
-            elf.__colour_cell(cells, colour=(237, 237, 237), transparency=235)
+            self.__colour_cell(cells, colour=(237, 237, 237), transparency=235)
 
     def __colour_cell(self, cell, colour, transparency):
 
@@ -247,11 +248,12 @@ class MazeView2D:
         if not (isinstance(cell, (list, tuple, np.ndarray)) and len(cell) == 2):
             raise TypeError("cell must a be a tuple, list, or numpy array of size 2")
 
-        x = int(cell[0] * self.CELL_W + 0.5 + 1)
-        y = int(cell[1] * self.CELL_H + 0.5 + 1)
-        w = int(self.CELL_W + 0.5 - 1)
-        h = int(self.CELL_H + 0.5 - 1)
-        pygame.draw.rect(self.maze_layer, colour + (transparency,), (x, y, w, h))
+        if self.maze.is_within_bound(cell[0], cell[1]):
+            x = int(cell[0] * self.CELL_W + 0.5 + 1)
+            y = int(cell[1] * self.CELL_H + 0.5 + 1)
+            w = int(self.CELL_W + 0.5 - 1)
+            h = int(self.CELL_H + 0.5 - 1)
+            pygame.draw.rect(self.maze_layer, colour + (transparency,), (x, y, w, h))
 
     @property
     def maze(self):

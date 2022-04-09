@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 
 import gym
@@ -5,6 +7,8 @@ from gym import error, spaces, utils
 from gym.utils import seeding
 from gym_maze.envs.maze_view_2d import MazeView2D
 from typing import Optional, List, Union
+
+from time import sleep
 
 
 class MazeEnv(gym.Env):
@@ -19,16 +23,22 @@ class MazeEnv(gym.Env):
             maze_file=None,
             maze_size=None,
             mode=None,
-            enable_render: bool = True):
+            enable_render: bool = True,
+            evaluation_step_delay: float = None
+    ):
 
         self.viewer = None
         self.enable_render = enable_render
+        self.__is_evaluating = False
+        self.__evaluation_step_delay = 1  # evaluation_step_delay
 
         if maze_file:
             self.maze_view = MazeView2D(maze_name="OpenAI Gym - Maze (%s)" % maze_file,
                                         maze_file_path=maze_file,
                                         screen_size=(640, 640), 
                                         enable_render=enable_render)
+            self.maze_view.update()
+
         elif maze_size:
             if mode == "plus":
                 has_loops = True
@@ -78,11 +88,32 @@ class MazeEnv(gym.Env):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
-    def step(self, action):
+    def start_evaluation(self):
+        if self.__is_evaluating:
+            raise ValueError("Already evaluating!")
+
+        self.__is_evaluating = True
+
+    def stop_evaluation(self):
+        if not self.__is_evaluating:
+            raise ValueError("Not evaluating!")
+
+        self.__is_evaluating = False
+
+    def step(self, action, delay: float = None):
+        if self.__is_evaluating and delay is None:
+            delay = self.__evaluation_step_delay
+
         if action in [0, 1, 2, 3]:
-            self.maze_view.move_robot(self.ACTION[action])
+            is_open = self.maze_view.move_robot(self.ACTION[action])
         else:
-            self.maze_view.move_robot(action)
+            is_open = self.maze_view.move_robot(action)
+
+        if self.enable_render and is_open:
+            self.maze_view.update()
+
+        if delay is not None and self.enable_render and is_open:
+            sleep(delay)
 
         if np.array_equal(self.maze_view.robot, self.maze_view.goal):
             reward = 1
@@ -97,8 +128,13 @@ class MazeEnv(gym.Env):
 
         return self.state, reward, done, info
 
-    def reset(self):
+    def reset(self, delay: float = None):
         self.maze_view.reset_robot()
+        self.maze_view.update()
+
+        if delay is not None:
+            sleep(delay)
+
         self.state = np.zeros(2, dtype=np.int64)
         self.steps_beyond_done = None
         self.done = False

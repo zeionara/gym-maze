@@ -3,6 +3,7 @@ import random
 import numpy as np
 import os
 from typing import Dict, Tuple, Optional, List, Union
+from time import sleep
 
 OPPOSITE_DIRECTION = {
     "N": "S",
@@ -17,6 +18,12 @@ class MazeView2D:
                  maze_size=(30, 30), screen_size=(600, 600),
                  has_loops=False, num_portals=0, enable_render=True):
 
+        # pygame.init()
+        # windowSurface = pygame.display.set_mode((500, 400))
+        # pygame.display.set_caption('Hello World')
+        # windowSurface.fill((255, 255, 255))
+        # pygame.display.update()
+        # sleep(10)
         # PyGame configurations
         pygame.init()
         pygame.display.set_caption(maze_name)
@@ -56,6 +63,7 @@ class MazeView2D:
             # Create a background
             self.background = pygame.Surface(self.screen.get_size()).convert()
             self.background.fill((255, 255, 255))
+            # self.blit(self.background, update_screen = False)
 
             # Create a layer for the maze
             self.maze_layer = pygame.Surface(self.screen.get_size()).convert_alpha()
@@ -76,16 +84,26 @@ class MazeView2D:
             # show the goal
             self.__draw_goal()
 
+            # self.blit(self.maze_layer)
+            # pygame.display.update()
+
+
+    # def blit(self, surface: pygame.Surface, update_screen: bool = True):
+    #     self.screen.blit(surface, (0, 0))
+    #     if update_screen:
+    #         pygame.display.update()
+
     def update(self, mode="human", cells: Optional[Union[np.ndarray, List[np.ndarray]]] = None):
-        try:
-            img_output = self.__view_update(mode, cells)
-            self.__controller_update()
-        except Exception as e:
-            self.__game_over = True
-            self.quit_game()
-            raise e
-        else:
-            return img_output
+        if self.__enable_render:
+            try:
+                img_output = self.__view_update(mode, cells)
+                self.__controller_update()
+            except Exception as e:
+                self.__game_over = True
+                self.quit_game()
+                raise e
+            else:
+                return img_output
 
     def quit_game(self):
         try:
@@ -102,7 +120,7 @@ class MazeView2D:
             raise ValueError("dir cannot be %s. The only valid dirs are %s."
                              % (str(direction), str(self.__maze.COMPASS.keys())))
 
-        if self.__maze.is_open(self.__robot, direction):
+        if (is_open := self.__maze.is_open(self.__robot, direction)):
 
             # update the drawing
             self.__draw_robot(transparency=0)
@@ -113,11 +131,15 @@ class MazeView2D:
             if self.maze.is_portal(self.robot):
                 self.__robot = np.array(self.maze.get_portal(tuple(self.robot)).teleport(tuple(self.robot)))
             self.__draw_robot(transparency=255)
+            # self.blit(self.maze_layer)
+
+        return is_open
 
     def reset_robot(self):
         self.__draw_robot(transparency=0)
         self.__robot = np.zeros(2, dtype=int)
         self.__draw_robot(transparency=255)
+        # self.blit(self.maze_layer)
 
     def __controller_update(self):
         if not self.__game_over:
@@ -129,7 +151,8 @@ class MazeView2D:
     def __view_update(self, mode="human", cells: Optional[Union[np.ndarray, List[np.ndarray]]] = None):
         if not self.__game_over:
             # update the robot's position
-            self.__colour_cells(cells)
+            if cells is not None:
+                self.__colour_cells(cells)
             self.__draw_entrance()
             self.__draw_goal()
             self.__draw_portals()

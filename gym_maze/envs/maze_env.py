@@ -30,7 +30,7 @@ class MazeEnv(gym.Env):
         self.viewer = None
         self.enable_render = enable_render
         self.__is_evaluating = False
-        self.__evaluation_step_delay = 1  # evaluation_step_delay
+        self.__evaluation_step_delay = 0.2  # evaluation_step_delay
 
         if maze_file:
             self.maze_view = MazeView2D(maze_name="OpenAI Gym - Maze (%s)" % maze_file,

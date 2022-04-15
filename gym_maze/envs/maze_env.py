@@ -10,6 +10,8 @@ from typing import Optional, List, Union
 
 from time import sleep
 
+from ..utils.collections import group
+
 
 class MazeEnv(gym.Env):
     metadata = {
@@ -31,6 +33,8 @@ class MazeEnv(gym.Env):
         self.enable_render = enable_render
         self.__is_evaluating = False
         self.__evaluation_step_delay = 0.2  # evaluation_step_delay
+        self.__history = None
+        self.__force_skip_delay = False
 
         if maze_file:
             self.maze_view = MazeView2D(maze_name="OpenAI Gym - Maze (%s)" % maze_file,
@@ -92,13 +96,19 @@ class MazeEnv(gym.Env):
         if self.__is_evaluating:
             raise ValueError("Already evaluating!")
 
+        print('Evaluation started')
+        self.__history = []
         self.__is_evaluating = True
+        self.__force_skip_delay = False
 
     def stop_evaluation(self):
         if not self.__is_evaluating:
             raise ValueError("Not evaluating!")
 
+        print('Evaluation stopped')
+        self.__history = None
         self.__is_evaluating = False
+        self.__force_skip_delay = False
 
     def step(self, action, delay: float = None):
         if self.__is_evaluating and delay is None:
@@ -109,10 +119,15 @@ class MazeEnv(gym.Env):
         else:
             is_open = self.maze_view.move_robot(action)
 
-        if self.enable_render and is_open:
+        if self.enable_render and is_open and not self.__force_skip_delay:
+            self.__history.append(action)
+            action_groups = group(self.__history, 2)
+            if len(action_groups[-10:]) >= 10 and len(set(action_groups[-10:])) == 1:
+                print('Robot started to repeat the same sequence of actions. Pausing visualization...')
+                self.__force_skip_delay = True
             self.maze_view.update()
 
-        if delay is not None and self.enable_render and is_open:
+        if delay is not None and self.enable_render and is_open and not self.__force_skip_delay:
             sleep(delay)
 
         if np.array_equal(self.maze_view.robot, self.maze_view.goal):

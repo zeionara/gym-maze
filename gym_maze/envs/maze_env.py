@@ -26,7 +26,8 @@ class MazeEnv(gym.Env):
             maze_size=None,
             mode=None,
             enable_render: bool = True,
-            evaluation_step_delay: float = None
+            evaluation_step_delay: float = None,
+            punishment_multiplier: float = 1.0
     ):
 
         self.viewer = None
@@ -36,6 +37,8 @@ class MazeEnv(gym.Env):
         self.__history = None
         self.__force_skip_delay = False
         self.__n_steps = 0
+        self.punishment_multiplier = punishment_multiplier
+        self.punishment = -0.1 * punishment_multiplier
 
         if maze_file:
             self.maze_view = MazeView2D(maze_name="OpenAI Gym - Maze (%s)" % maze_file,
@@ -140,7 +143,7 @@ class MazeEnv(gym.Env):
             reward = 1
             done = True
         else:
-            reward = -0.1/(self.maze_size[0]*self.maze_size[1])
+            reward = self.punishment / (self.maze_size[0]*self.maze_size[1])
             done = False
 
         self.state = self.maze_view.robot

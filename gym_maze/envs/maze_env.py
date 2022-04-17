@@ -35,6 +35,7 @@ class MazeEnv(gym.Env):
         self.__evaluation_step_delay = 0.2  # evaluation_step_delay
         self.__history = None
         self.__force_skip_delay = False
+        self.__n_steps = 0
 
         if maze_file:
             self.maze_view = MazeView2D(maze_name="OpenAI Gym - Maze (%s)" % maze_file,
@@ -100,15 +101,17 @@ class MazeEnv(gym.Env):
         self.__history = []
         self.__is_evaluating = True
         self.__force_skip_delay = False
+        self.__n_steps = 0
 
     def stop_evaluation(self):
         if not self.__is_evaluating:
             raise ValueError("Not evaluating!")
 
-        print('Evaluation stopped')
+        print(f'Evaluation stopped. Agent made {self.__n_steps} steps')
         self.__history = None
         self.__is_evaluating = False
         self.__force_skip_delay = False
+        self.__n_steps = 0
 
     def step(self, action, delay: float = None):
         if self.__is_evaluating and delay is None:
@@ -126,6 +129,9 @@ class MazeEnv(gym.Env):
                 print('Robot started to repeat the same sequence of actions. Pausing visualization...')
                 self.__force_skip_delay = True
             self.maze_view.update()
+
+        if self.__is_evaluating:
+            self.__n_steps += 1
 
         if delay is not None and self.enable_render and is_open and not self.__force_skip_delay:
             sleep(delay)

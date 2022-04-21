@@ -26,14 +26,14 @@ class MazeEnv(gym.Env):
             maze_size=None,
             mode=None,
             enable_render: bool = True,
-            evaluation_step_delay: float = None,
+            evaluation_step_delay: float = 0.2,
             punishment_multiplier: float = 1.0
     ):
 
         self.viewer = None
         self.enable_render = enable_render
         self.__is_evaluating = False
-        self.__evaluation_step_delay = 0.2  # evaluation_step_delay
+        self.__evaluation_step_delay = evaluation_step_delay
         self.__history = None
         self.__force_skip_delay = False
         self.__n_steps = 0

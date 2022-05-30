@@ -41,10 +41,12 @@ class MazeEnv(gym.Env):
         self.punishment = -0.1 * punishment_multiplier
 
         if maze_file:
+            # print('making maze view')
             self.maze_view = MazeView2D(maze_name="OpenAI Gym - Maze (%s)" % maze_file,
                                         maze_file_path=maze_file,
                                         screen_size=(640, 640), 
                                         enable_render=enable_render)
+            # print('made maze view')
             self.maze_view.update()
 
         elif maze_size:
@@ -100,7 +102,7 @@ class MazeEnv(gym.Env):
         if self.__is_evaluating:
             raise ValueError("Already evaluating!")
 
-        print('Evaluation started')
+        # print('Evaluation started')
         self.__history = []
         self.__is_evaluating = True
         self.__force_skip_delay = False
@@ -110,7 +112,7 @@ class MazeEnv(gym.Env):
         if not self.__is_evaluating:
             raise ValueError("Not evaluating!")
 
-        print(f'Evaluation stopped. Agent made {self.__n_steps} steps')
+        # print(f'Evaluation stopped. Agent made {self.__n_steps} steps')
         self.__history = None
         self.__is_evaluating = False
         self.__force_skip_delay = False

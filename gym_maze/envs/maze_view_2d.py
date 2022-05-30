@@ -25,7 +25,9 @@ class MazeView2D:
         # pygame.display.update()
         # sleep(10)
         # PyGame configurations
+        # print('initializing pygame...')
         pygame.init()
+        # print('initialized pygame')
         pygame.display.set_caption(maze_name)
         self.clock = pygame.time.Clock()
         self.__game_over = False

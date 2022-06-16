@@ -129,7 +129,8 @@ class MazeView2D:
     def __view_update(self, mode="human", cells: Optional[Union[np.ndarray, List[np.ndarray]]] = None):
         if not self.__game_over:
             # update the robot's position
-            self.__colour_cells(cells)
+            if cells is not None:
+                self.__colour_cells(cells)
             self.__draw_entrance()
             self.__draw_goal()
             self.__draw_portals()
